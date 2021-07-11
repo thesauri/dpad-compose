@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity() {
                     ScrollableGrid(
                         items = boxColors,
                     ) { color ->
-                        CardContent(
+                        ColoredBox(
                             Modifier.dpadFocusable(
                                 onClick = {
                                     colorClicked = color
@@ -83,7 +83,7 @@ fun ColorClickedBanner(color: Color) {
 }
 
 @Composable
-fun CardContent(
+fun ColoredBox(
     modifier: Modifier = Modifier,
     color: Color
 ) {
