@@ -20,7 +20,6 @@ fun <T> ScrollableGrid(
             .fillMaxSize()
             .verticalScroll(verticalScrollState)
     ) {
-        Spacer(Modifier.height(24.dp))
         items.forEach { rowItems ->
             val rowScrollState = remember { ScrollState(initial = 0) }
             Row(
