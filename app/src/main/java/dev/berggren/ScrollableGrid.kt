@@ -45,10 +45,10 @@ fun <T> ScrollableGrid(
             ) {
                 rowItems.forEach { rowItem ->
                     val boxInteractionSource = remember { MutableInteractionSource() }
-                    val isBoxFocused by boxInteractionSource.collectIsFocusedAsState()
+                    val isItemFocused by boxInteractionSource.collectIsFocusedAsState()
                     val animatedBorderColor by animateColorAsState(
                         targetValue =
-                            if (isBoxFocused) focusedBorderColor
+                            if (isItemFocused) focusedBorderColor
                             else unfocusedBorderColor
                     )
                     var previousPress: PressInteraction.Press? by remember {
@@ -92,7 +92,7 @@ fun <T> ScrollableGrid(
                                         }
                                         KeyEventType.KeyUp -> {
                                             previousPress?.let { previousPress ->
-                                                if (isBoxFocused) {
+                                                if (isItemFocused) {
                                                     onClick(rowItem)
                                                 }
                                                 scope.launch {
@@ -120,9 +120,9 @@ fun <T> ScrollableGrid(
                         }
                         Spacer(Modifier.width(24.dp))
                     }
-                    LaunchedEffect(isBoxFocused) {
+                    LaunchedEffect(isItemFocused) {
                         previousPress?.let {
-                            if (!isBoxFocused) {
+                            if (!isItemFocused) {
                                 boxInteractionSource.emit(
                                     PressInteraction.Release(
                                         press = it
