@@ -20,7 +20,7 @@ In this case, we'll create a grid with colored boxes that expand beyond the scre
 Each row is individually scrollable horizontally while the whole grid can be scrolled vertically.
 Think Netflix and movies.
 
-[!Netflix-like grid](https://media.giphy.com/media/dve4CrRGK01RHVj2H6/giphy.gif)
+![Netflix-like grid](https://media.giphy.com/media/dve4CrRGK01RHVj2H6/giphy.gif)
 
 First, we need main `Column` that positions its children vertically that is scrollable:
 
@@ -95,7 +95,7 @@ fun <T> ScrollableGrid(
 
 Next, we'll use our newly created component to create a grid of colored boxes.
 First, let's prepare list of lists containing the colors we want to display.
-To make my life simple I picked a palette from [flatuicolors.com](https://flatuicolors.com/palette/defo) and copied the hexadecimal values to a list of colors:
+To make my life simple I picked a palette from [flatuicolors.com](https://flatuicolors.com/palette/defo) and copied some of the colors to a list:
 
 ```kotlin
 val rowColors = listOf(
@@ -107,7 +107,7 @@ val rowColors = listOf(
 )
 ```
 
-These are the primary colors for each row, but to further distinguish them horizontally I darkened them progressively:
+These are the primary colors for each row, but to further distinguish them horizontally let's darkened them progressively:
 
 ```
 val itemsPerRow = 10
@@ -144,20 +144,20 @@ Finally, let's pass the colors to the scrollable grid and the colored box compon
 
 ```kotlin
 MaterialTheme {
-		Column(
-				Modifier
-						.fillMaxSize()
-						.background(Color(0xffecf0f1))
-						.padding(start = 24.dp)
-		) {
-				ScrollableGrid(
-						items = boxColors,
-				) { color ->
-						ColoredBox(
-								color = color
-						)
-				}
+	Column(
+		Modifier
+			.fillMaxSize()
+			.background(Color(0xffecf0f1))
+			.padding(start = 24.dp)
+	) {
+		ScrollableGrid(
+			items = boxColors,
+		) { color ->
+			ColoredBox(
+				color = color
+			)
 		}
+	}
 }
 ```
 
