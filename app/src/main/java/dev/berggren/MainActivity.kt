@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
                     Modifier
                         .fillMaxSize()
                         .background(Color(0xffecf0f1))
-                        .padding(24.dp)
+                        .padding(start = 24.dp)
                 ) {
                     ColorClickedBanner(color = colorClicked)
                     Spacer(Modifier.height(24.dp))
