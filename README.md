@@ -109,7 +109,7 @@ val rowColors = listOf(
 
 These are the primary colors for each row, but to further distinguish them horizontally let's darkened them progressively:
 
-```
+```kotlin
 val itemsPerRow = 10
 val boxColors = rowColors.map { rowColor ->
     (0..itemsPerRow).map { rowIndex ->
