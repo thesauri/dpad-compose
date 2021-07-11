@@ -144,20 +144,20 @@ Finally, let's pass the colors to the scrollable grid and the colored box compon
 
 ```kotlin
 MaterialTheme {
-	Column(
-		Modifier
-			.fillMaxSize()
-			.background(Color(0xffecf0f1))
-			.padding(start = 24.dp)
-	) {
-		ScrollableGrid(
-			items = boxColors,
-		) { color ->
-			ColoredBox(
-				color = color
-			)
-		}
-	}
+  Column(
+    Modifier
+      .fillMaxSize()
+      .background(Color(0xffecf0f1))
+      .padding(start = 24.dp)
+  ) {
+    ScrollableGrid(
+      items = boxColors,
+    ) { color ->
+      ColoredBox(
+        color = color
+      )
+    }
+  }
 }
 ```
 
