@@ -22,9 +22,10 @@ import kotlinx.coroutines.launch
 @Composable
 fun <T> ScrollableGrid(
     items: List<List<T>>,
+    onClick: (item: T) -> Unit,
     unfocusedBorderColor: Color = Color(0x00f39c12),
     focusedBorderColor: Color = Color(0xfff39c12),
-    contentForItem: @Composable BoxScope.(T) -> Unit
+    contentForItem: @Composable BoxScope.(item: T) -> Unit
 ) {
     val verticalScrollState = remember { ScrollState(initial = 0) }
 
@@ -42,7 +43,6 @@ fun <T> ScrollableGrid(
                     .padding(bottom = 24.dp)
                     .horizontalScroll(rowScrollState)
             ) {
-                Spacer(Modifier.width(24.dp))
                 rowItems.forEach { rowItem ->
                     val boxInteractionSource = remember { MutableInteractionSource() }
                     val isBoxFocused by boxInteractionSource.collectIsFocusedAsState()
@@ -69,7 +69,7 @@ fun <T> ScrollableGrid(
                                     interactionSource = boxInteractionSource,
                                     indication = rememberRipple()
                                 ) {
-                                    println("DDD: clicked!")
+                                    onClick(rowItem)
                                 }
                                 .onKeyEvent {
                                     if (!listOf(Key.DirectionCenter, Key.Enter).contains(it.key)) {
@@ -92,6 +92,7 @@ fun <T> ScrollableGrid(
                                         }
                                         KeyEventType.KeyUp -> {
                                             previousPress?.let { previousPress ->
+                                                onClick(rowItem)
                                                 scope.launch {
                                                     boxInteractionSource.emit(
                                                         PressInteraction.Release(

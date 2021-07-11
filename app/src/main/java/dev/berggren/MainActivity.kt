@@ -5,7 +5,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.AlertDialog
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -35,15 +37,43 @@ class MainActivity : ComponentActivity() {
             }
         }
         setContent {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(Color(0xffecf0f1))
-            ) {
-                ScrollableGrid(items = boxColors) { color ->
-                    CardContent(color = color)
+            var colorClicked: Color by remember { mutableStateOf(Color.Transparent) }
+
+            MaterialTheme {
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .background(Color(0xffecf0f1))
+                        .padding(24.dp)
+                ) {
+                    ColorClickedBanner(color = colorClicked)
+                    Spacer(Modifier.height(24.dp))
+                    ScrollableGrid(
+                        items = boxColors,
+                        onClick = {
+                            colorClicked = it
+                        }
+                    ) { color ->
+                        CardContent(color = color)
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun ColorClickedBanner(color: Color) {
+    Row {
+        Row(Modifier.height(IntrinsicSize.Min)) {
+            Text(text = "Clicked color: ", style = MaterialTheme.typography.h3)
+            Spacer(Modifier.width(24.dp))
+            Box(
+                Modifier
+                    .background(color, CircleShape)
+                    .aspectRatio(1f)
+                    .fillMaxSize()
+            )
         }
     }
 }
