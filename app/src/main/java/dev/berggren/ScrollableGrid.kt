@@ -92,7 +92,9 @@ fun <T> ScrollableGrid(
                                         }
                                         KeyEventType.KeyUp -> {
                                             previousPress?.let { previousPress ->
-                                                onClick(rowItem)
+                                                if (isBoxFocused) {
+                                                    onClick(rowItem)
+                                                }
                                                 scope.launch {
                                                     boxInteractionSource.emit(
                                                         PressInteraction.Release(
