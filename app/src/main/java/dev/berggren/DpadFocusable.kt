@@ -86,9 +86,7 @@ fun Modifier.dpadFocusable(
                 }
                 KeyEventType.KeyUp -> {
                     previousPress?.let { previousPress ->
-                        if (isItemFocused) {
-                            onClick()
-                        }
+                        onClick()
                         scope.launch {
                             boxInteractionSource.emit(
                                 PressInteraction.Release(
