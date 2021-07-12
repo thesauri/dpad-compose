@@ -175,7 +175,7 @@ This modifier has the responsibility of showing a border if focused and appropri
 
 First, let's add a dummy modifier and add some arguments for configuring its behavior:
 
-``kotlin
+```kotlin
 @ExperimentalComposeUiApi
 fun Modifier.dpadFocusable(
     onClick: () -> Unit,
