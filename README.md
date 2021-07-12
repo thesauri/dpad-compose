@@ -236,6 +236,7 @@ This also has the added effect of adding indications (by default ripples) whenev
     ) {
       onClick()
     }
+}
 ```
 
 With these elements in place, let's listen for key events.
