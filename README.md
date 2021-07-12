@@ -1,24 +1,26 @@
 # dpad-compose
-D-pad navigation in compose
+D-pad navigation in Jetpack Compose
 
 ## The problem
 While Android is mostly used on touch devices, the operating system can also be used with arrow keys and d-pads (directional pads).
 At the time of writing, the upcoming UI toolkit for writing native Android apps, [Jetpack Compose](https://developer.android.com/jetpack/compose), only has partial support for such navigation in its latest release `1.0.0-rc01`.
-The library supports adding `focusable()` [modifiers](https://developer.android.com/reference/kotlin/androidx/compose/ui/Modifier) to elements and is able to move focus between items on key presses, but it's not able to handle clicks nor scroll lists yet.
+The library supports adding `focusable()` [modifiers](https://developer.android.com/reference/kotlin/androidx/compose/ui/Modifier) to elements and is able to move focus between items based on directional key presses, but it's unable to handle clicking nor scrolling lists yet.
 
-As this has been asked for multiple times in the kotlinlang Slack channel, the purpose of this demo is to demonstrate how this functionality can be implemented in the current version of Jetpack Compose.
+As this has been asked for multiple times in the kotlinlang Slack channel, the purpose of this tutorial is to demonstrate how this functionality can be implemented in the current version of Jetpack Compose.
 The tutorial in its current revision includes clicking.
-Scrolling will be added a later date.
+Scrolling will, hopefully, be added a later date.
+
+Feel free to suggest improvements by creating an issue or a pull request.
 
 ## Clicking
 Clicking involves invoking an action when the center key of the d-pad or the enter key is pressed.
-But before diving into the details of handling clicks, let's create a demo scene with items to navigate.
+But before diving into the details of handling clicks, let's create a demo scene with items to navigate and click.
 
 ### Creating a scrollable grid
 
 In this case, we'll create a grid with colored boxes that expand beyond the screen both vertically and horizontally.
 Each row is individually scrollable horizontally while the whole grid can be scrolled vertically.
-Think Netflix and movies.
+Think Netflix and TV series.
 
 ![Netflix-like grid](https://media.giphy.com/media/dve4CrRGK01RHVj2H6/giphy.gif)
 
@@ -32,7 +34,7 @@ Column(
 ) { /* Children here */ }
 ```
 
-Then, for each row we add a `Row` that positions its children horizontally and that is also scrollable:
+Secondly, for each row we add a `Row` that positions its children horizontally and that's also scrollable:
 
 ```kotlin
 val rowScrollState = remember { ScrollState(initial = 0) }
@@ -45,9 +47,10 @@ Row(
 ```
 
 Finally, we need to map out the row items.
-To help us out we put our existing code inside a component that allows us to pass generic items.
+To help us out we put our existing code inside a component that allows us to pass generic items `T`.
 These items are passed as a list of list, a list of row items, of any type `T`.
-In addition to this, we pass a function that maps any item `T` to a composable, i.e. what that item should look like:
+In addition to this, we pass a function that maps any item `T` to a composable, i.e. what that item should look like.
+Using this component we can create scrollable grids of this kind with any type of items:
 
 ```kotlin
 import androidx.compose.foundation.*
@@ -95,7 +98,7 @@ fun <T> ScrollableGrid(
 
 Next, we'll use our newly created component to create a grid of colored boxes.
 First, let's prepare list of lists containing the colors we want to display.
-To make my life simple I picked a palette from [flatuicolors.com](https://flatuicolors.com/palette/defo) and copied some of the colors to a list:
+To make this look decent I picked a palette from [flatuicolors.com](https://flatuicolors.com/palette/defo) and copied some of the colors to a list:
 
 ```kotlin
 val rowColors = listOf(
