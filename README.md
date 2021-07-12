@@ -351,7 +351,7 @@ We also invoke the click handler here:
 
 As the `.onKeyEvent` is only called if the item is focused, clicks can be canceled by navigating to another item and hence unfocusing the item before releasing the center key.
 This also means, however, that the item will remain in a pressed state.
-To ensure the presses are released whenever the item is unfocused, we add [LaunchedEffect](https://developer.android.com/reference/kotlin/androidx/compose/runtime/package-summary#LaunchedEffect(kotlin.Array,kotlin.coroutines.SuspendFunction1) that is run every time the `isItemFocused` state changes.
+To ensure the presses are released whenever the item is unfocused, we add [LaunchedEffect](https://developer.android.com/jetpack/compose/side-effects#launchedeffect) that is run every time the `isItemFocused` state changes.
 We use this to release any potentially present press whenever the item is unfocused:
 
 ```kotlin
