@@ -166,3 +166,301 @@ MaterialTheme {
 
 At this stage, you should have a Netflix-like grid that is row-wise scrollable and vertically scrollable as a whole.
 
+### Adding d-pad navigation
+The next step is to make the grid items focusable using the d-pad and to invoke click actions when clicking the center key or enter.
+Similar to how adding out-of-the-box focus is done using the `focusable()` modifier, we'll create a custom modifier `dpadFocusable()` that we can attach to grid items.
+This modifier has the responsibility of showing a border if focused and appropriately responding to key events.
+
+![Dpad navigation](https://media.giphy.com/media/hzCzKy4ccr5zeg06P2/giphy.gif)
+
+First, let's add a dummy modifier and add some arguments for configuring its behavior:
+
+``kotlin
+@ExperimentalComposeUiApi
+fun Modifier.dpadFocusable(
+    onClick: () -> Unit,
+    borderWidth: Dp = 4.dp,
+    unfocusedBorderColor: Color = Color(0x00f39c12),
+    focusedBorderColor: Color = Color(0xfff39c12)
+) = composed { /* Content here */ }
+```
+
+Next, we need a way to visualize what item is currently focused.
+In this case, we use a border that smoothly transitions between the focused color and the unfocused color (the default argument is in this case the focused color with alpha 0):
+
+```kotlin
+... = compose {
+  val boxInteractionSource = remember { MutableInteractionSource() }
+  val isItemFocused by boxInteractionSource.collectIsFocusedAsState()
+  val animatedBorderColor by animateColorAsState(
+      targetValue =
+      if (isItemFocused) focusedBorderColor
+      else unfocusedBorderColor
+  )
+
+  this.
+    border(
+      width = borderWidth,
+      color = animatedBorderColor
+    )
+}
+```
+
+In the last step, we used an interaction source (`boxInteractionSource`) to listen to whether the item is focused or not.
+To receive these events, we need to make the item focusable and attach the interaction source:
+
+```kotlin
+... = compose {
+  /* [...] */
+  this.
+    /* [...] */
+    .focusable(interactionSource = boxInteractionSource)
+```
+
+Now the items are navigatable using a d-pad and the currently focused item is visualized with a border.
+Next, we'll add clicking.
+
+D-pad navigation is sometimes used together with touch navigation.
+For this reason, we need to make the items touchable too.
+We'll do this by adding the `.clickable()` modifier and attaching the interaction source and click handler
+This also has the added effect of adding indications (by default ripples) whenever it is interacted with, a feature we'll use for d-pad clicks too:
+
+```kotlin
+... = compose {
+  /* [...] */
+  this.
+    /* [...] */
+    .clickable(
+      interactionSource = boxInteractionSource,
+      indication = rememberRipple()
+    ) {
+      onClick()
+    }
+```
+
+With these elements in place, let's listen for key events.
+Listening to key events has two main goals: invoke the on-click handler whenever the center key is pressed and visualizing press and release events.
+For good user experience, we need to make it possible to cancel click events too.
+This is done by pressing and holding the center key (or enter) and then navigating to another item before releasing the center key.
+As for visualizing presses and releases, we'll use the default ripples.
+
+We add a `.keyEvent()` modifier with a block that is run for key events, but we ignore any other key than the center or enter key by returning early:
+
+```kotlin
+/* [...] */
+this.
+/* [...] */
+  .onKeyEvent {
+    if (!listOf(Key.DirectionCenter, Key.Enter).contains(it.key)) {
+      return@onKeyEvent false
+    }
+  /* [...] */
+  }
+```
+
+Then we check whether the event was a key down or key up event.
+For key down events, we don't invoke the click handler yet, but we want to indicate to the user that the click has been registered.
+This is done by emiting a [PressInteraction.Press](https://developer.android.com/reference/kotlin/androidx/compose/foundation/interaction/PressInteraction) event to the interaction source:
+
+```kotlin
+... = compose {
+  val scope = rememberCoroutineScope()
+  this.
+  /* [...] */
+    .onKeyEvent {
+    /* [...] */
+      when (it.type) {
+        KeyEventType.KeyDown -> {
+          val press =
+            PressInteraction.Press(
+              pressPosition = Offset(
+                x = boxSize.width / 2f,
+                y = boxSize.height / 2f
+              )
+            )
+          scope.launch {
+            boxInteractionSource.emit(press)
+          }
+          previousPress = press
+          true
+        }
+        KeyEventType.KeyUp -> { /* [...] */ }
+        else -> false
+      }
+    }
+}
+```
+
+In the snippet above, there are two variables that we haven't declared yet: `boxSize` and `previousPress`.
+
+Ripple indications grow from the point where the user pressed the item, for this reason we need to specify a position for the interaction even though a d-pad click has no inherent position.
+One option which I found to look good is to have the ripple grow from the center of the item.
+To achieve this we need to know the width and height of the element in question.
+This can be done by adding a [onGloballyPositioned](https://developer.android.com/reference/kotlin/androidx/compose/ui/layout/OnGloballyPositionedModifier) modifier that is called whenever the element's global position has changed.
+We keep track of the size and update it whenever the modifier's block is called:
+
+```kotlin
+... = compose {
+  /* [...] */
+  var boxSize by remember {
+    mutableStateOf(IntSize(0, 0))
+  }
+  this.
+    /* [...] */
+    .onGloballyPositioned {
+      boxSize = it.size
+    }
+}
+```
+
+After the ripple indication has finished the background of the pressed item remains slightly dimmed to indicate that it is still being pressed.
+To release the dimming we need to emit a `PressInteraction.Release` event with the press event as an argument (this has to be specified for supporting pressing the same item multiple times at different positions), which was the reason why we saved the press event in a variable in the previous snippet.
+Now let's actually declare the variable and use it to release the press on key ups.
+We also invoke the click handler here:
+
+```kotlin
+... = compose {
+  /* [...] */
+  var previousPress: PressInteraction.Press? by remember {
+    mutableStateOf(null)
+  }
+  this.
+    /* [...] */
+    .onKeyEvent {
+      /* [...] */
+      when (it.type) {
+        /* [...] */
+        KeyEventType.KeyUp -> {
+          previousPress?.let { previousPress ->
+            onClick()
+            scope.launch {
+              boxInteractionSource.emit(
+                PressInteraction.Release(
+                  press = previousPress
+                )
+              )
+            }
+          }
+          true
+        }
+      }
+    }
+}
+```
+
+As the `.onKeyEvent` is only called if the item is focused, clicks can be canceled by navigating to another item and hence unfocusing the item before releasing the center key.
+This also means, however, that the item will remain in a pressed state.
+To ensure the presses are released whenever the item is unfocused, we add [LaunchedEffect](https://developer.android.com/reference/kotlin/androidx/compose/runtime/package-summary#LaunchedEffect(kotlin.Array,kotlin.coroutines.SuspendFunction1) that is run every time the `isItemFocused` state changes.
+We use this to release any potentially present press whenever the item is unfocused:
+
+```kotlin
+this.
+  /* [...] */
+  LaunchedEffect(isItemFocused) {
+    previousPress?.let {
+      if (!isItemFocused) {
+        boxInteractionSource.emit(
+          PressInteraction.Release(
+            press = it
+          )
+        )
+      }
+    }
+  }
+```
+
+With all these parts, we end up with a modifier that looks like this:
+
+![Press interactions on a box](https://media.giphy.com/media/SurFCuZaFLoagcuIbr/giphy.gif)
+
+```kotlin
+@ExperimentalComposeUiApi
+fun Modifier.dpadFocusable(
+  onClick: () -> Unit,
+  borderWidth: Dp = 4.dp,
+  unfocusedBorderColor: Color = Color(0x00f39c12),
+  focusedBorderColor: Color = Color(0xfff39c12)
+) = composed {
+  val boxInteractionSource = remember { MutableInteractionSource() }
+  val isItemFocused by boxInteractionSource.collectIsFocusedAsState()
+  val animatedBorderColor by animateColorAsState(
+    targetValue =
+      if (isItemFocused) focusedBorderColor
+      else unfocusedBorderColor
+  )
+  var previousPress: PressInteraction.Press? by remember {
+    mutableStateOf(null)
+  }
+  val scope = rememberCoroutineScope()
+  var boxSize by remember {
+    mutableStateOf(IntSize(0, 0))
+  }
+
+  LaunchedEffect(isItemFocused) {
+    previousPress?.let {
+      if (!isItemFocused) {
+        boxInteractionSource.emit(
+          PressInteraction.Release(
+            press = it
+          )
+        )
+      }
+    }
+  }
+
+  this
+    .onGloballyPositioned {
+      boxSize = it.size
+    }
+    .clickable(
+      interactionSource = boxInteractionSource,
+      indication = rememberRipple()
+    ) {
+      onClick()
+    }
+    .onKeyEvent {
+      if (!listOf(Key.DirectionCenter, Key.Enter).contains(it.key)) {
+        return@onKeyEvent false
+      }
+      when (it.type) {
+        KeyEventType.KeyDown -> {
+          val press =
+            PressInteraction.Press(
+              pressPosition = Offset(
+                x = boxSize.width / 2f,
+                y = boxSize.height / 2f
+              )
+            )
+          scope.launch {
+            boxInteractionSource.emit(press)
+          }
+          previousPress = press
+          true
+        }
+        KeyEventType.KeyUp -> {
+          previousPress?.let { previousPress ->
+            onClick()
+            scope.launch {
+              boxInteractionSource.emit(
+                PressInteraction.Release(
+                  press = previousPress
+                )
+              )
+            }
+          }
+          true
+        }
+        else -> {
+          false
+        }
+      }
+    }
+    .focusable(interactionSource = boxInteractionSource)
+    .border(
+      width = borderWidth,
+      color = animatedBorderColor
+    )
+}
+```
+[DpadFocusable.kt](app/src/main/java/dev/berggren/DpadFocusable.kt)
+
