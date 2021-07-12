@@ -17,6 +17,7 @@ Feel free to suggest improvements by creating an issue or a pull request.
 ## TL;DR
 - [ScrollableGrid.kt](app/src/main/java/dev/berggren/ScrollableGrid.kt)
 - [DpadFocusable.kt](app/src/main/java/dev/berggren/DpadFocusable.kt)
+- [MainActivity.kt](app/src/main/java/dev/berggren/MainActivity.kt)
 
 ## Clicking
 Clicking involves invoking an action when the center key of the d-pad or the enter key is pressed.
