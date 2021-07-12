@@ -14,6 +14,10 @@ Scrolling will, hopefully, be added a later date.
 
 Feel free to suggest improvements by creating an issue or a pull request.
 
+## TL;DR
+- [ScrollableGrid.kt](app/src/main/java/dev/berggren/ScrollableGrid.kt)
+- [DpadFocusable.kt](app/src/main/java/dev/berggren/DpadFocusable.kt)
+
 ## Clicking
 Clicking involves invoking an action when the center key of the d-pad or the enter key is pressed.
 But before diving into the details of handling clicks, let's create a demo scene with items to navigate and click.
