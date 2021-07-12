@@ -1,6 +1,8 @@
 # dpad-compose
 D-pad navigation in Jetpack Compose
 
+![Navigating and clicking on grid items](https://media.giphy.com/media/QxXT07irVKDZwuq18S/giphy.gif)
+
 ## The problem
 While Android is mostly used on touch devices, the operating system can also be used with arrow keys and d-pads (directional pads).
 At the time of writing, the upcoming UI toolkit for writing native Android apps, [Jetpack Compose](https://developer.android.com/jetpack/compose), only has partial support for such navigation in its latest release `1.0.0-rc01`.
@@ -151,7 +153,7 @@ MaterialTheme {
     Modifier
       .fillMaxSize()
       .background(Color(0xffecf0f1))
-      .padding(start = 24.dp)
+      .padding(start = 24.dp, top = 24.dp)
   ) {
     ScrollableGrid(
       items = boxColors,
@@ -465,3 +467,67 @@ fun Modifier.dpadFocusable(
 ```
 [DpadFocusable.kt](app/src/main/java/dev/berggren/DpadFocusable.kt)
 
+## Reacting to click events in the grid
+With a scrollable grid and a modifier for reacting to click events, let's put the two parts together to react to clicks on items in the grid.
+
+First, we'll create a banner component with a text and a circle indicating for visualizing what color has been clicked last:
+
+```kotlin
+@Composable
+fun ColorClickedBanner(color: Color) {
+  Row {
+    Row(Modifier.height(IntrinsicSize.Min)) {
+      Text(text = "Clicked color: ", style = MaterialTheme.typography.h3)
+      Spacer(Modifier.width(24.dp))
+      Box(
+        Modifier
+          .background(color, CircleShape)
+          .aspectRatio(1f)
+          .fillMaxSize()
+      )
+    }
+  }
+}
+```
+
+We then place the banner above the grid and add some state for keeping track of what color has been  clicked.
+We update this state by adding our newly created `.dpadFocusable` modifier to the colored box item:
+
+```kotlin
+var colorClicked: Color by remember { mutableStateOf(Color.Transparent) }
+
+MaterialTheme {
+  Column(
+    Modifier
+      .fillMaxSize()
+      .background(Color(0xffecf0f1))
+      .padding(start = 24.dp, top = 24.dp)
+  ) {
+    ColorClickedBanner(color = colorClicked)
+    Spacer(Modifier.height(24.dp))
+    ScrollableGrid(
+      items = boxColors,
+    ) { color ->
+      ColoredBox(
+          Modifier.dpadFocusable(
+            onClick = {
+              colorClicked = color
+            }
+          ),
+          color = color
+      )
+    }
+  }
+}
+```
+[MainActivity.kt](app/src/main/java/dev/berggren/MainActivity.kt)
+
+Voilà!
+We now have a grid that is scrollable, where items can be navigated using the d-pad, and where center clicks cause and indication and the banner to update based on the item clicked.
+
+![Navigating and clicking on grid items](https://media.giphy.com/media/QxXT07irVKDZwuq18S/giphy.gif)
+
+## Next steps: scrolling
+As you may notice, items that are outside of the screen are currently inaccessible.
+The expected behavior is that the grid scrolls when reaching the edges to expose further content, but this doesn't happen at the moment.
+In the next part of this tutorial we will add support for this, stay tuned.
