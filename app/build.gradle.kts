@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    compileSdk = 30
+    compileSdk = 31
     buildToolsVersion = "30.0.3"
 
     defaultConfig {
         applicationId = "dev.berggren"
         minSdk = 26
-        targetSdk = 30
+        targetSdk = 31
         versionCode = 1
         versionName = "1.0"
 
@@ -56,6 +56,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling:${rootProject.extra["compose_version"]}")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.3.1")
     implementation("androidx.activity:activity-compose:1.3.0-beta02")
+    implementation("androidx.compose.foundation:foundation:1.1.0-beta02")
     testImplementation("junit:junit:4.+")
     androidTestImplementation("androidx.test.ext:junit:1.1.2")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.3.0")
