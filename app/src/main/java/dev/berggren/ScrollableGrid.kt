@@ -49,41 +49,32 @@ fun <T> ScrollableGrid(
                     .bringIntoViewRequester(bringRowsIntoViewRequesters[rowIndex])
             ) {
 
-                rowItems.forEachIndexed { itemIndex, rowItem ->
+                rowItems.forEachIndexed { rowItemIndex, rowItem ->
                     Row(
                         modifier = Modifier
-                            .bringIntoViewRequester(bringItemsIntoViewRequesters[itemIndex])
+                            .bringIntoViewRequester(bringItemsIntoViewRequesters[rowItemIndex])
                             .onFocusEvent { focusState ->
                                 if (focusState.isFocused) {
                                     coroutineScope.launch {
                                         bringRowsIntoViewRequesters[rowIndex].bringIntoView()
-                                        bringItemsIntoViewRequesters[itemIndex].bringIntoView()
-
+                                        bringItemsIntoViewRequesters[rowItemIndex].bringIntoView()
                                     }
                                 }
                             }
                             .onKeyEvent {
+                                it.nativeKeyEvent
+                                var bool = false
                                 if (it.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
                                     if (it.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+                                        if (rowItemIndex == 0)
+                                            bool = true
                                     }
-
                                     if (it.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
-                                    }
-
-                                    if (it.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_UP) {
-                                    }
-
-                                    if (it.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-                                    }
-                                    if (
-                                        it.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
-                                        it.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_ENTER ||
-                                        it.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE
-                                    ) {
-
+                                        if(rowItemIndex == rowItems.count() - 1)
+                                            bool = true
                                     }
                                 }
-                                false
+                                bool
                             }
                     ) {
                         Box {
