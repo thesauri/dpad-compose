@@ -14,8 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
+@ExperimentalComposeUiApi
 class MainActivity : ComponentActivity() {
-    @ExperimentalComposeUiApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val rowColors = listOf(
@@ -44,12 +44,13 @@ class MainActivity : ComponentActivity() {
                     Modifier
                         .fillMaxSize()
                         .background(Color(0xffecf0f1))
-                        .padding(start = 24.dp, top = 24.dp)
+                        .padding(top = spacing)
                 ) {
                     ColorClickedBanner(color = colorClicked)
-                    Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(spacing))
                     ScrollableGrid(
                         items = boxColors,
+                        spacing = spacing
                     ) { color ->
                         ColoredBox(
                             Modifier.dpadFocusable(
@@ -71,7 +72,7 @@ fun ColorClickedBanner(color: Color) {
     Row {
         Row(Modifier.height(IntrinsicSize.Min)) {
             Text(text = "Clicked color: ", style = MaterialTheme.typography.h3)
-            Spacer(Modifier.width(24.dp))
+            Spacer(Modifier.width(spacing))
             Box(
                 Modifier
                     .background(color, CircleShape)
@@ -89,7 +90,10 @@ fun ColoredBox(
 ) {
     Box(
         modifier
-            .size(128.dp)
+            .size(itemSize)
             .background(color)
     )
 }
+
+private val itemSize = 128.dp
+private val spacing = itemSize / 4
