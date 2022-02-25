@@ -19,8 +19,7 @@ fun <T> ScrollableGrid(
     Column(
         Modifier
             .fillMaxSize()
-            .verticalScroll(verticalScrollState)
-            .padding(end = spacing, bottom = spacing),
+            .verticalScroll(verticalScrollState),
         verticalArrangement = Arrangement.spacedBy(spacing)
     ) {
         items.forEach { rowItems ->
@@ -29,14 +28,16 @@ fun <T> ScrollableGrid(
                 Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rowScrollState),
-                horizontalArrangement = Arrangement.spacedBy(spacing)
             ) {
+                Spacer(Modifier.width(spacing))
                 rowItems.forEach { rowItem ->
                     Box {
                         contentForItem(rowItem)
                     }
+                    Spacer(Modifier.width(spacing))
                 }
             }
         }
+        Spacer(Modifier.height(spacing))
     }
 }

@@ -46,7 +46,9 @@ class MainActivity : ComponentActivity() {
                         .background(Color(0xffecf0f1))
                         .padding(top = spacing)
                 ) {
-                    ColorClickedBanner(color = colorClicked)
+                    Box(Modifier.padding(start = spacing)) {
+                        ColorClickedBanner(color = colorClicked)
+                    }
                     Spacer(Modifier.height(spacing))
                     ScrollableGrid(
                         items = boxColors,
