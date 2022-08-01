@@ -1,17 +1,15 @@
 package dev.berggren
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.PressInteraction
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.*
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.focus.focusTarget
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
@@ -26,7 +24,8 @@ fun Modifier.dpadFocusable(
     onClick: () -> Unit,
     borderWidth: Dp = 4.dp,
     unfocusedBorderColor: Color = Color(0x00f39c12),
-    focusedBorderColor: Color = Color(0xfff39c12)
+    focusedBorderColor: Color = Color(0xfff39c12),
+    indication: Indication? = null
 ) = composed {
     val boxInteractionSource = remember { MutableInteractionSource() }
     val isItemFocused by boxInteractionSource.collectIsFocusedAsState()
@@ -35,6 +34,9 @@ fun Modifier.dpadFocusable(
         if (isItemFocused) focusedBorderColor
         else unfocusedBorderColor
     )
+    var previousFocus: FocusInteraction.Focus? by remember {
+        mutableStateOf(null)
+    }
     var previousPress: PressInteraction.Press? by remember {
         mutableStateOf(null)
     }
@@ -59,11 +61,26 @@ fun Modifier.dpadFocusable(
         .onGloballyPositioned {
             boxSize = it.size
         }
-        .clickable(
+        .indication(
             interactionSource = boxInteractionSource,
-            indication = rememberRipple()
-        ) {
-            onClick()
+            indication = indication ?: rememberRipple()
+        )
+        .onFocusChanged { focusState ->
+            val newFocusInteraction = if (focusState.isFocused) {
+                FocusInteraction.Focus()
+            } else {
+                previousFocus?.let {
+                    FocusInteraction.Unfocus(it)
+                }
+            }
+            newFocusInteraction?.let {
+                scope.launch {
+                    boxInteractionSource.emit(it)
+                }
+                if (it is FocusInteraction.Focus) {
+                    previousFocus = it
+                }
+            }
         }
         .onKeyEvent {
             if (!listOf(Key.DirectionCenter, Key.Enter).contains(it.key)) {
@@ -102,7 +119,7 @@ fun Modifier.dpadFocusable(
                 }
             }
         }
-        .focusable(interactionSource = boxInteractionSource)
+        .focusTarget()
         .border(
             width = borderWidth,
             color = animatedBorderColor
