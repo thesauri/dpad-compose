@@ -3,6 +3,8 @@ package dev.berggren
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.*
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -11,22 +13,26 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalFoundationApi::class)
 @ExperimentalComposeUiApi
 fun Modifier.dpadFocusable(
     onClick: () -> Unit,
     borderWidth: Dp = 4.dp,
     unfocusedBorderColor: Color = Color(0x00f39c12),
     focusedBorderColor: Color = Color(0xfff39c12),
-    indication: Indication? = null
+    indication: Indication? = null,
+    visibilityPadding: Rect = Rect.Zero
 ) = composed {
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
     val boxInteractionSource = remember { MutableInteractionSource() }
     val isItemFocused by boxInteractionSource.collectIsFocusedAsState()
     val animatedBorderColor by animateColorAsState(
@@ -58,27 +64,35 @@ fun Modifier.dpadFocusable(
     }
 
     this
-        .onGloballyPositioned {
-            boxSize = it.size
+        .bringIntoViewRequester(bringIntoViewRequester)
+        .onSizeChanged {
+            boxSize = it
         }
         .indication(
             interactionSource = boxInteractionSource,
             indication = indication ?: rememberRipple()
         )
         .onFocusChanged { focusState ->
-            val newFocusInteraction = if (focusState.isFocused) {
-                FocusInteraction.Focus()
+            if (focusState.isFocused) {
+                val newFocusInteraction = FocusInteraction.Focus()
+                scope.launch {
+                    boxInteractionSource.emit(newFocusInteraction)
+                }
+                scope.launch {
+                    val visibilityBounds = Rect(
+                        left = -1f * visibilityPadding.left,
+                        top = -1f * visibilityPadding.top,
+                        right = boxSize.width + visibilityPadding.right,
+                        bottom = boxSize.height + visibilityPadding.bottom
+                    )
+                    bringIntoViewRequester.bringIntoView(visibilityBounds)
+                }
+                previousFocus = newFocusInteraction
             } else {
                 previousFocus?.let {
-                    FocusInteraction.Unfocus(it)
-                }
-            }
-            newFocusInteraction?.let {
-                scope.launch {
-                    boxInteractionSource.emit(it)
-                }
-                if (it is FocusInteraction.Focus) {
-                    previousFocus = it
+                    scope.launch {
+                        boxInteractionSource.emit(FocusInteraction.Unfocus(it))
+                    }
                 }
             }
         }

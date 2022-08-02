@@ -11,7 +11,9 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 
 class MainActivity : ComponentActivity() {
@@ -44,18 +46,27 @@ class MainActivity : ComponentActivity() {
                     Modifier
                         .fillMaxSize()
                         .background(Color(0xffecf0f1))
-                        .padding(start = 24.dp, top = 24.dp)
+                        .padding(start = boxPadding, top = boxPadding)
                 ) {
                     ColorClickedBanner(color = colorClicked)
-                    Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(boxPadding))
                     ScrollableGrid(
                         items = boxColors,
                     ) { color ->
+                        val elementPaddingAndHalfOfNextBox = with(LocalDensity.current) {
+                            (boxPadding + boxSize.div(2)).toPx()
+                        }
                         ColoredBox(
                             Modifier.dpadFocusable(
                                 onClick = {
                                     colorClicked = color
-                                }
+                                },
+                                visibilityPadding = Rect(
+                                    left = elementPaddingAndHalfOfNextBox,
+                                    top = elementPaddingAndHalfOfNextBox,
+                                    right = elementPaddingAndHalfOfNextBox,
+                                    bottom = elementPaddingAndHalfOfNextBox
+                                )
                             ),
                             color = color
                         )
@@ -89,7 +100,10 @@ fun ColoredBox(
 ) {
     Box(
         modifier
-            .size(128.dp)
+            .size(boxSize)
             .background(color)
     )
 }
+
+private val boxSize = 128.dp
+private val boxPadding = 24.dp
