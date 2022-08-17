@@ -46,12 +46,12 @@ class MainActivity : ComponentActivity() {
                     Modifier
                         .fillMaxSize()
                         .background(Color(0xffecf0f1))
-                        .padding(start = boxPadding, top = boxPadding)
+                        .padding(top = boxPadding)
                 ) {
                     ColorClickedBanner(color = colorClicked)
                     Spacer(Modifier.height(boxPadding))
                     ScrollableGrid(
-                        items = boxColors,
+                        items = boxColors
                     ) { color ->
                         val elementPaddingAndHalfOfNextBox = with(LocalDensity.current) {
                             (boxPadding + boxSize.div(2)).toPx()
@@ -80,7 +80,11 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun ColorClickedBanner(color: Color) {
     Row {
-        Row(Modifier.height(IntrinsicSize.Min)) {
+        Row(
+            Modifier
+                .height(IntrinsicSize.Min)
+                .padding(start = boxPadding)
+        ) {
             Text(text = "Clicked color: ", style = MaterialTheme.typography.h3)
             Spacer(Modifier.width(24.dp))
             Box(

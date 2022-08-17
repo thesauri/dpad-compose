@@ -29,11 +29,8 @@ fun <T> ScrollableGrid(
                     .horizontalScroll(rowScrollState)
             ) {
                 rowItems.forEach { rowItem ->
-                    Row {
-                        Box {
-                            contentForItem(rowItem)
-                        }
-                        Spacer(Modifier.width(24.dp))
+                    Box(Modifier.padding(horizontal = 12.dp)) {
+                        contentForItem(rowItem)
                     }
                 }
             }
