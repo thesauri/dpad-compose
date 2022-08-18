@@ -7,7 +7,6 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-@ExperimentalComposeUiApi
 @Composable
 fun <T> ScrollableGrid(
     items: List<List<T>>,
