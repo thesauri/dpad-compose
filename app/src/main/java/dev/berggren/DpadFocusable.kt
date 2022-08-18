@@ -15,8 +15,10 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -50,6 +52,7 @@ fun Modifier.dpadFocusable(
     var boxSize by remember {
         mutableStateOf(IntSize(0, 0))
     }
+    val inputMode = LocalInputModeManager.current
 
     LaunchedEffect(isItemFocused) {
         previousPress?.let {
@@ -63,79 +66,87 @@ fun Modifier.dpadFocusable(
         }
     }
 
-    this
-        .bringIntoViewRequester(bringIntoViewRequester)
-        .onSizeChanged {
-            boxSize = it
-        }
-        .indication(
+    if (inputMode.inputMode == InputMode.Touch)
+        this.clickable(
             interactionSource = boxInteractionSource,
             indication = indication ?: rememberRipple()
-        )
-        .onFocusChanged { focusState ->
-            if (focusState.isFocused) {
-                val newFocusInteraction = FocusInteraction.Focus()
-                scope.launch {
-                    boxInteractionSource.emit(newFocusInteraction)
-                }
-                scope.launch {
-                    val visibilityBounds = Rect(
-                        left = -1f * visibilityPadding.left,
-                        top = -1f * visibilityPadding.top,
-                        right = boxSize.width + visibilityPadding.right,
-                        bottom = boxSize.height + visibilityPadding.bottom
-                    )
-                    bringIntoViewRequester.bringIntoView(visibilityBounds)
-                }
-                previousFocus = newFocusInteraction
-            } else {
-                previousFocus?.let {
-                    scope.launch {
-                        boxInteractionSource.emit(FocusInteraction.Unfocus(it))
-                    }
-                }
-            }
+        ) {
+            onClick()
         }
-        .onKeyEvent {
-            if (!listOf(Key.DirectionCenter, Key.Enter).contains(it.key)) {
-                return@onKeyEvent false
+    else
+        this
+            .bringIntoViewRequester(bringIntoViewRequester)
+            .onSizeChanged {
+                boxSize = it
             }
-            when (it.type) {
-                KeyEventType.KeyDown -> {
-                    val press =
-                        PressInteraction.Press(
-                            pressPosition = Offset(
-                                x = boxSize.width / 2f,
-                                y = boxSize.height / 2f
-                            )
-                        )
+            .indication(
+                interactionSource = boxInteractionSource,
+                indication = indication ?: rememberRipple()
+            )
+            .onFocusChanged { focusState ->
+                if (focusState.isFocused) {
+                    val newFocusInteraction = FocusInteraction.Focus()
                     scope.launch {
-                        boxInteractionSource.emit(press)
+                        boxInteractionSource.emit(newFocusInteraction)
                     }
-                    previousPress = press
-                    true
-                }
-                KeyEventType.KeyUp -> {
-                    previousPress?.let { previousPress ->
-                        onClick()
+                    scope.launch {
+                        val visibilityBounds = Rect(
+                            left = -1f * visibilityPadding.left,
+                            top = -1f * visibilityPadding.top,
+                            right = boxSize.width + visibilityPadding.right,
+                            bottom = boxSize.height + visibilityPadding.bottom
+                        )
+                        bringIntoViewRequester.bringIntoView(visibilityBounds)
+                    }
+                    previousFocus = newFocusInteraction
+                } else {
+                    previousFocus?.let {
                         scope.launch {
-                            boxInteractionSource.emit(
-                                PressInteraction.Release(
-                                    press = previousPress
-                                )
-                            )
+                            boxInteractionSource.emit(FocusInteraction.Unfocus(it))
                         }
                     }
-                    true
-                }
-                else -> {
-                    false
                 }
             }
-        }
-        .focusTarget()
-        .border(
-            width = borderWidth,
-            color = animatedBorderColor
-        )
+            .onKeyEvent {
+                if (!listOf(Key.DirectionCenter, Key.Enter).contains(it.key)) {
+                    return@onKeyEvent false
+                }
+                when (it.type) {
+                    KeyEventType.KeyDown -> {
+                        val press =
+                            PressInteraction.Press(
+                                pressPosition = Offset(
+                                    x = boxSize.width / 2f,
+                                    y = boxSize.height / 2f
+                                )
+                            )
+                        scope.launch {
+                            boxInteractionSource.emit(press)
+                        }
+                        previousPress = press
+                        true
+                    }
+                    KeyEventType.KeyUp -> {
+                        previousPress?.let { previousPress ->
+                            onClick()
+                            scope.launch {
+                                boxInteractionSource.emit(
+                                    PressInteraction.Release(
+                                        press = previousPress
+                                    )
+                                )
+                            }
+                        }
+                        true
+                    }
+                    else -> {
+                        false
+                    }
+                }
+            }
+            .focusTarget()
+            .border(
+                width = borderWidth,
+                color = animatedBorderColor
+            )
 }
