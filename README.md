@@ -407,7 +407,7 @@ To ensure the presses are released whenever the item is unfocused, we add [Launc
 We use this to release any potentially present press whenever the item is unfocused:
 
 ```kotlin
-this.
+... = compose {
   /* [...] */
   LaunchedEffect(isItemFocused) {
     previousPress?.let {
@@ -486,7 +486,83 @@ We now have a grid that is scrollable, where items can be navigated using the d-
 
 ![Navigating and clicking on grid items](https://media.giphy.com/media/QxXT07irVKDZwuq18S/giphy.gif)
 
-## Next steps: scrolling
-As you may notice, items that are outside of the screen are currently inaccessible.
-The expected behavior is that the grid scrolls when reaching the edges to expose further content, but this doesn't happen at the moment.
-In the next part of this tutorial we will add support for this, stay tuned.
+### Scroll padding
+Items outside of the scroll viewport are currently visible, but there is nothing that guarantees that the next item is exposed to hint the user that there are more elements in the list.
+In this part of the tutorial, we will use the `BringIntoViewRequester()` modifier to achieve this behavior.
+
+`BringIntoViewRequester()` can be used to request an item to be made visible.
+When called, the parent scroll containers will scroll to ensure that it is made visible.
+It also supports passing a rectangle that specifies exactly what local coordinates should be made visible.
+We will use this to add "scroll padding" and expose parts of the next item.
+
+First, we will create a `BringIntoViewRequester()` and attach it to the item:
+
+```kotlin
+... = compose {
+  /* [...] */
+  val bringIntoViewRequester = remember { BringIntoViewRequester() }
+
+  this
+    .bringIntoViewRequester(bringIntoViewRequester)
+    /* [...] */
+```
+
+Then, whenever we gain focus, we'll call the bring into view requester with the user-passed padding added:
+
+```kotlin
+fun Modifier.dpadFocusable(
+  /* [...] */
+  visibilityPadding: Rect = Rect.Zero,
+  /* [...] */
+) = composed {
+  this
+    .onFocusChanged { focusState ->
+        if (focusState.isFocused) {
+            /* [...] */
+            scope.launch {
+                val visibilityBounds = Rect(
+                    left = -1f * visibilityPadding.left,
+                    top = -1f * visibilityPadding.top,
+                    right = boxSize.width + visibilityPadding.right,
+                    bottom = boxSize.height + visibilityPadding.bottom
+                )
+                bringIntoViewRequester.bringIntoView(visibilityBounds)
+            }
+            /* [...] */
+        } else {
+          /* [...] */
+        }
+    }
+```
+
+Finally, we'll pass a visibility padding that corresponds to the spacing between the boxes and half of a box width.
+Before passing this value, we also need to convert it from density pixels to on-screen pixels:
+
+```kotlin
+/* [...] */
+ScrollableGrid(
+    items = boxColors
+) { color, position ->
+    val elementPaddingAndHalfOfNextBox = with(LocalDensity.current) {
+        (boxPadding + boxSize.div(2)).toPx()
+    }
+    ColoredBox(
+        Modifier.dpadFocusable(
+            /* [...] */
+            visibilityPadding = Rect(
+                left = elementPaddingAndHalfOfNextBox,
+                top = elementPaddingAndHalfOfNextBox,
+                right = elementPaddingAndHalfOfNextBox,
+                bottom = elementPaddingAndHalfOfNextBox
+            ),
+            /* [...] */
+        ),
+        /* [...] */
+    )
+}
+```
+
+Now when scrolling towards the edge of the viewport, half of the next element is exposed.
+
+TODO: Add a video of this.
+
