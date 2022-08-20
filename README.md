@@ -566,3 +566,27 @@ Now when scrolling towards the edge of the viewport, half of the next element is
 
 TODO: Add a video of this.
 
+### Supporting touch
+As we aren't using the `.clickable()` modifier, we have lost support for tapping the element using touch.
+In an Android TV environment that is purely d-pad based, this may not matter much.
+But on other environments that support both modes this is essential.
+
+We'll add support for touch by listening to whether we're in keyboard or touch mode.
+Whenever we're in touch mode, we'll simply attach a `.clickable()` modifier and let it handle touch events for us:
+
+```kotlin
+... = compose {
+  /* [...] */
+  val inputMode = LocalInputModeManager.current
+
+  if (inputMode.inputMode == InputMode.Touch)
+      this.clickable(
+          interactionSource = boxInteractionSource,
+          indication = indication ?: rememberRipple()
+      ) {
+          onClick()
+      }
+  } else {
+    /* D-pad modifier code */
+  }
+```
