@@ -5,12 +5,34 @@ D-pad navigation in Jetpack Compose
 
 ## The problem
 While Android is mostly used on touch devices, the operating system can also be used with arrow keys and d-pads (directional pads).
-At the time of writing, the upcoming UI toolkit for writing native Android apps, [Jetpack Compose](https://developer.android.com/jetpack/compose), only has partial support for such navigation in its latest release `1.0.0-rc01`.
-The library supports adding `focusable()` [modifiers](https://developer.android.com/reference/kotlin/androidx/compose/ui/Modifier) to elements and is able to move focus between items based on directional key presses, but it's unable to handle clicking nor scrolling lists yet.
+At the time of writing, the new UI toolkit for writing native Android apps, [Jetpack Compose](https://developer.android.com/jetpack/compose), only has partial support for such navigation in its latest stable release `1.2.0`.
+The library supports focus and click handling using the `clickable()` [modifier](https://developer.android.com/reference/kotlin/androidx/compose/ui/Modifier) to move focus between items based on directional key presses, but there are usability issues with the out-of-the-box behavior:
 
-As this has been asked for multiple times in the kotlinlang Slack channel, the purpose of this tutorial is to demonstrate how this functionality can be implemented in the current version of Jetpack Compose.
-The tutorial in its current revision includes clicking.
-Scrolling will, hopefully, be added a later date.
+### No scroll padding
+When moving focus to an element that is at the edge of the screen in a scrollable container, the focused element is brought visible without any padding or offset.
+The consequence is that there is no indication to the user that there might be more elements accessible by scrolling further.
+
+Consider a row consisting of four focusable boxes on a row, but where only three boxes fit in the viewport.
+When focusing the third item, the viewport will look as following for the user:
+
+![Viewport when the third element is focused, the fourth element is not visible at all to the user](images/scroll-offset-1-actual.png)
+
+In other words, there is no indication to the user hinting that there is a fourth item as well:
+
+![A zoomed out view that visualizes how there is actually a fourth element outside the viewport](images/scroll-offset-2-context.png)
+
+A more desirable behavior would be that a part of the next focusable item is visible already when focusing the third element:
+
+![Viewport when the third element is focused, but where half of the fourth element is exposed](images/scroll-offset-3-desired.png)
+
+### No way to cancel clicks
+When tapping a button, clicks can be canceled by dragging the finger out from the element before releasing the touch.
+Similar behavior could be expected from a button that is clicked using the enter key, if a directional key is pressed before releasing the enter key the click could be canceled.
+Out of the box, with the `.clickable()` modifier, this is no the case however.
+The click handler of the newly focused element will be called instead.
+
+### Tutorial goal
+The goal of this tutorial is to explain how the aforementioned usability issues can be addressed by implementing a custom `.dpadFocusable()` modifier.
 
 Feel free to suggest improvements by creating an issue or a pull request.
 
