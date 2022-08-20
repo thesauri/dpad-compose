@@ -449,7 +449,7 @@ fun ColorClickedBanner(color: Color) {
 }
 ```
 
-We then place the banner above the grid and add some state for keeping track of what color has been  clicked.
+We then place the banner above the grid and add some state for keeping track of what color has been clicked.
 We update this state by adding our newly created `.dpadFocusable` modifier to the colored box item:
 
 ```kotlin
@@ -460,7 +460,7 @@ MaterialTheme {
     Modifier
       .fillMaxSize()
       .background(Color(0xffecf0f1))
-      .padding(start = 24.dp, top = 24.dp)
+      .padding(top = 24.dp)
   ) {
     ColorClickedBanner(color = colorClicked)
     Spacer(Modifier.height(24.dp))
