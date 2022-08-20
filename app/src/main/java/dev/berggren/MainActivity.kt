@@ -52,7 +52,7 @@ class MainActivity : ComponentActivity() {
                     Spacer(Modifier.height(boxPadding))
                     ScrollableGrid(
                         items = boxColors
-                    ) { color ->
+                    ) { color, position ->
                         val elementPaddingAndHalfOfNextBox = with(LocalDensity.current) {
                             (boxPadding + boxSize.div(2)).toPx()
                         }
@@ -66,7 +66,8 @@ class MainActivity : ComponentActivity() {
                                     top = elementPaddingAndHalfOfNextBox,
                                     right = elementPaddingAndHalfOfNextBox,
                                     bottom = elementPaddingAndHalfOfNextBox
-                                )
+                                ),
+                                isDefault = position.rowIndex == 0 && position.columnIndex == 0
                             ),
                             color = color
                         )

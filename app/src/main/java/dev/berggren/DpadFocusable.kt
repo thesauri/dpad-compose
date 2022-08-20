@@ -10,6 +10,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
@@ -32,8 +34,10 @@ fun Modifier.dpadFocusable(
     unfocusedBorderColor: Color = Color(0x00f39c12),
     focusedBorderColor: Color = Color(0xfff39c12),
     indication: Indication? = null,
-    visibilityPadding: Rect = Rect.Zero
+    visibilityPadding: Rect = Rect.Zero,
+    isDefault: Boolean = false
 ) = composed {
+    val focusRequester = remember { FocusRequester() }
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
     val boxInteractionSource = remember { MutableInteractionSource() }
     val isItemFocused by boxInteractionSource.collectIsFocusedAsState()
@@ -54,6 +58,16 @@ fun Modifier.dpadFocusable(
     }
     val inputMode = LocalInputModeManager.current
 
+    LaunchedEffect(inputMode.inputMode) {
+        when (inputMode.inputMode) {
+            InputMode.Keyboard -> {
+                if (isDefault) {
+                    focusRequester.requestFocus()
+                }
+            }
+            InputMode.Touch -> {}
+        }
+    }
     LaunchedEffect(isItemFocused) {
         previousPress?.let {
             if (!isItemFocused) {
@@ -144,6 +158,7 @@ fun Modifier.dpadFocusable(
                     }
                 }
             }
+            .focusRequester(focusRequester)
             .focusTarget()
             .border(
                 width = borderWidth,
