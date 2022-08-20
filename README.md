@@ -41,19 +41,15 @@ Feel free to suggest improvements by creating an issue or a pull request.
 - [DpadFocusable.kt](app/src/main/java/dev/berggren/DpadFocusable.kt)
 - [MainActivity.kt](app/src/main/java/dev/berggren/MainActivity.kt)
 
-## Clicking
-Clicking involves invoking an action when the center key of the d-pad or the enter key is pressed.
-But before diving into the details of handling clicks, let's create a demo scene with items to navigate and click.
+## Tutorial
 
-### Creating a scrollable grid
-
-In this case, we'll create a grid with colored boxes that expand beyond the screen both vertically and horizontally.
+First, we'll create a grid with colored boxes that expand beyond the screen both vertically and horizontally.
 Each row is individually scrollable horizontally while the whole grid can be scrolled vertically.
 Think Netflix and TV series.
 
 ![Netflix-like grid](https://media.giphy.com/media/dve4CrRGK01RHVj2H6/giphy.gif)
 
-First, we need main `Column` that positions its children vertically that is scrollable:
+First, we need a main `Column` that positions its children vertically that is scrollable:
 
 ```kotlin
 Column(
@@ -75,9 +71,9 @@ Row(
 ) { /* Row content here */ }
 ```
 
-Finally, we need to map out the row items.
-To help us out we put our existing code inside a component that allows us to pass generic items `T`.
-These items are passed as a list of list, a list of row items, of any type `T`.
+Finally, we need to compose the row items.
+To make our solution generic we put our existing code inside a component that allows us to pass generic items `T`.
+These items are passed as a list of lists, a list of row items, of any type `T`.
 In addition to this, we pass a function that maps any item `T` to a composable, i.e. what that item should look like.
 Using this component we can create scrollable grids of this kind with any type of items:
 
@@ -85,15 +81,13 @@ Using this component we can create scrollable grids of this kind with any type o
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-@ExperimentalComposeUiApi
 @Composable
 fun <T> ScrollableGrid(
     items: List<List<T>>,
-    contentForItem: @Composable BoxScope.(item: T) -> Unit
+    contentForItem: @Composable BoxScope.(item: T, position: GridPosition) -> Unit
 ) {
     val verticalScrollState = remember { ScrollState(initial = 0) }
 
@@ -102,7 +96,7 @@ fun <T> ScrollableGrid(
             .fillMaxSize()
             .verticalScroll(verticalScrollState)
     ) {
-        items.forEach { rowItems ->
+        items.forEachIndexed { rowIndex, rowItems ->
             val rowScrollState = remember { ScrollState(initial = 0) }
             Row(
                 Modifier
@@ -110,18 +104,24 @@ fun <T> ScrollableGrid(
                     .padding(bottom = 24.dp)
                     .horizontalScroll(rowScrollState)
             ) {
-                rowItems.forEach { rowItem ->
-                    Row {
-                        Box {
-                            contentForItem(rowItem)
-                        }
-                        Spacer(Modifier.width(24.dp))
+                rowItems.forEachIndexed { columnIndex, rowItem ->
+                    Box(Modifier.padding(horizontal = 12.dp)) {
+                        contentForItem(
+                            rowItem,
+                            GridPosition(
+                                rowIndex = rowIndex,
+                                columnIndex = columnIndex
+                            )
+                        )
                     }
                 }
             }
         }
     }
 }
+
+@Stable
+data class GridPosition(val rowIndex: Int, val columnIndex: Int)
 ```
 [ScrollableGrid.kt](app/src/main/java/dev/berggren/ScrollableGrid.kt)
 
@@ -180,11 +180,11 @@ MaterialTheme {
     Modifier
       .fillMaxSize()
       .background(Color(0xffecf0f1))
-      .padding(start = 24.dp, top = 24.dp)
+      .padding(top = 24.dp)
   ) {
     ScrollableGrid(
       items = boxColors,
-    ) { color ->
+    ) { color, _ ->
       ColoredBox(
         color = color
       )
@@ -195,9 +195,9 @@ MaterialTheme {
 
 At this stage, you should have a Netflix-like grid that is row-wise scrollable and vertically scrollable as a whole.
 
-### Adding d-pad navigation
+### Focus and click handling
 The next step is to make the grid items focusable using the d-pad and to invoke click actions when clicking the center key or enter.
-Similar to how adding out-of-the-box focus is done using the `focusable()` modifier, we'll create a custom modifier `dpadFocusable()` that we can attach to grid items.
+Similar to how adding out-of-the-box click and focus handling is done using the `clickable()` modifier, we'll create a custom modifier `dpadFocusable()` that we can attach to grid items.
 This modifier has the responsibility of showing a border if focused and appropriately responding to key events.
 
 ![Dpad navigation](https://media.giphy.com/media/hzCzKy4ccr5zeg06P2/giphy.gif)
@@ -205,12 +205,17 @@ This modifier has the responsibility of showing a border if focused and appropri
 First, let's add a dummy modifier and add some arguments for configuring its behavior:
 
 ```kotlin
+@OptIn(ExperimentalFoundationApi::class)
 @ExperimentalComposeUiApi
 fun Modifier.dpadFocusable(
     onClick: () -> Unit,
     borderWidth: Dp = 4.dp,
     unfocusedBorderColor: Color = Color(0x00f39c12),
-    focusedBorderColor: Color = Color(0xfff39c12)
+    focusedBorderColor: Color = Color(0xfff39c12),
+    indication: Indication? = null,
+    visibilityPadding: Rect = Rect.Zero,
+    isDefault: Boolean = false
+
 ) = composed { /* Content here */ }
 ```
 
@@ -235,44 +240,61 @@ In this case, we use a border that smoothly transitions between the focused colo
 }
 ```
 
-In the last step, we used an interaction source (`boxInteractionSource`) to listen to whether the item is focused or not.
-To receive these events, we need to make the item focusable and attach the interaction source:
+In addition to visualization whether an element is focused, we also want to visualize whether it is clicked or not.
+This can be done by using the `.indication()` modifier.
+In case the user did not specify a particular indication, we fall back to the default ripple indication:
 
 ```kotlin
 ... = compose {
   /* [...] */
   this.
     /* [...] */
-    .focusable(interactionSource = boxInteractionSource)
-```
-
-Now the items are navigatable using a d-pad and the currently focused item is visualized with a border.
-Next, we'll add clicking.
-
-D-pad navigation is sometimes used together with touch navigation.
-For this reason, we need to make the items touchable too.
-We'll do this by adding the `.clickable()` modifier and attaching the interaction source and click handler
-This also has the added effect of adding indications (by default ripples) whenever it is interacted with, a feature we'll use for d-pad clicks too:
-
-```kotlin
-... = compose {
-  /* [...] */
-  this.
-    /* [...] */
-    .clickable(
+    .indication(
       interactionSource = boxInteractionSource,
-      indication = rememberRipple()
-    ) {
-      onClick()
-    }
+      indication = indication ?: rememberRipple()
+    )
 }
 ```
 
-With these elements in place, let's listen for key events.
-Listening to key events has two main goals: invoke the on-click handler whenever the center key is pressed and visualizing press and release events.
+In the last steps, we used an interaction source (`boxInteractionSource`) to listen to whether the item is focused or not.
+To receive use events, we need to emit them whenever the box gains or releases focus.
+Normally, `boxInteractionSource` could simply have been passed to the clickable modifier and it would have emitted the events for us.
+As we want to override the default behavior, however, we have to emit these events ourselves. 
+When we gain focus, we emit a focus event and store it as a state variable.
+When focus is lost, we emit an unfocus event that refers to the last focus event:
+
+```kotlin
+... = compose {
+  /* [...] */
+  var previousFocus: FocusInteraction.Focus? by remember {
+      mutableStateOf(null)
+  }
+  this.
+    /* [...] */
+    .onFocusChanged { focusState ->
+        if (focusState.isFocused) {
+            val newFocusInteraction = FocusInteraction.Focus()
+            scope.launch {
+                boxInteractionSource.emit(newFocusInteraction)
+            }
+            previousFocus = newFocusInteraction
+        } else {
+            previousFocus?.let {
+                scope.launch {
+                    boxInteractionSource.emit(FocusInteraction.Unfocus(it))
+                }
+            }
+        }
+    }
+    .focusTarget()
+```
+
+Now the items will have a border whenever they are focused.
+Next, we'll add clicking.
+
+There are two main goals when handling key events: invoke the on-click handler whenever the center key is pressed and visualizing press and release events.
 For good user experience, we need to make it possible to cancel click events too.
-This is done by pressing and holding the center key (or enter) and then navigating to another item before releasing the center key.
-As for visualizing presses and releases, we'll use the default ripples.
+This is done by pressing and holding the center key (or enter) and then navigating to another item before releasing the center key (similar to how a tap can be canceled by dragging the finger away from the touched element before releasing).
 
 We add a `.keyEvent()` modifier with a block that is run for key events, but we ignore any other key than the center or enter key by returning early:
 
@@ -290,7 +312,7 @@ this.
 
 Then we check whether the event was a key down or key up event.
 For key down events, we don't invoke the click handler yet, but we want to indicate to the user that the click has been registered.
-This is done by emiting a [PressInteraction.Press](https://developer.android.com/reference/kotlin/androidx/compose/foundation/interaction/PressInteraction) event to the interaction source:
+This is done by emitting a [PressInteraction.Press](https://developer.android.com/reference/kotlin/androidx/compose/foundation/interaction/PressInteraction) event to the interaction source:
 
 ```kotlin
 ... = compose {
@@ -323,10 +345,11 @@ This is done by emiting a [PressInteraction.Press](https://developer.android.com
 
 In the snippet above, there are two variables that we haven't declared yet: `boxSize` and `previousPress`.
 
-Ripple indications grow from the point where the user pressed the item, for this reason we need to specify a position for the interaction even though a d-pad click has no inherent position.
-One option which I found to look good is to have the ripple grow from the center of the item.
+The default indication, ripple indications, grows from the point where the user pressed the item.
+For this reason we need to specify a position for the interaction, even though a d-pad click has no inherent position.
+One option that I found to look good is to have the ripple grow from the center of the item.
 To achieve this we need to know the width and height of the element in question.
-This can be done by adding a [onGloballyPositioned](https://developer.android.com/reference/kotlin/androidx/compose/ui/layout/OnGloballyPositionedModifier) modifier that is called whenever the element's global position has changed.
+This can be done by adding a [onSizeChanged](https://developer.android.com/reference/kotlin/androidx/compose/ui/layout/OnSizeChangedModifier) modifier that is called whenever the element's global position changes.
 We keep track of the size and update it whenever the modifier's block is called:
 
 ```kotlin
@@ -337,8 +360,8 @@ We keep track of the size and update it whenever the modifier's block is called:
   }
   this.
     /* [...] */
-    .onGloballyPositioned {
-      boxSize = it.size
+    .onSizeChanged {
+        boxSize = it
     }
 }
 ```
@@ -399,100 +422,9 @@ this.
   }
 ```
 
-With all these parts, we end up with a modifier that looks like this:
+With all these parts, we end up with a box that can capture focus and handle clicks:
 
 ![Press interactions on a box](https://media.giphy.com/media/SurFCuZaFLoagcuIbr/giphy.gif)
-
-```kotlin
-@ExperimentalComposeUiApi
-fun Modifier.dpadFocusable(
-  onClick: () -> Unit,
-  borderWidth: Dp = 4.dp,
-  unfocusedBorderColor: Color = Color(0x00f39c12),
-  focusedBorderColor: Color = Color(0xfff39c12)
-) = composed {
-  val boxInteractionSource = remember { MutableInteractionSource() }
-  val isItemFocused by boxInteractionSource.collectIsFocusedAsState()
-  val animatedBorderColor by animateColorAsState(
-    targetValue =
-      if (isItemFocused) focusedBorderColor
-      else unfocusedBorderColor
-  )
-  var previousPress: PressInteraction.Press? by remember {
-    mutableStateOf(null)
-  }
-  val scope = rememberCoroutineScope()
-  var boxSize by remember {
-    mutableStateOf(IntSize(0, 0))
-  }
-
-  LaunchedEffect(isItemFocused) {
-    previousPress?.let {
-      if (!isItemFocused) {
-        boxInteractionSource.emit(
-          PressInteraction.Release(
-            press = it
-          )
-        )
-      }
-    }
-  }
-
-  this
-    .onGloballyPositioned {
-      boxSize = it.size
-    }
-    .clickable(
-      interactionSource = boxInteractionSource,
-      indication = rememberRipple()
-    ) {
-      onClick()
-    }
-    .onKeyEvent {
-      if (!listOf(Key.DirectionCenter, Key.Enter).contains(it.key)) {
-        return@onKeyEvent false
-      }
-      when (it.type) {
-        KeyEventType.KeyDown -> {
-          val press =
-            PressInteraction.Press(
-              pressPosition = Offset(
-                x = boxSize.width / 2f,
-                y = boxSize.height / 2f
-              )
-            )
-          scope.launch {
-            boxInteractionSource.emit(press)
-          }
-          previousPress = press
-          true
-        }
-        KeyEventType.KeyUp -> {
-          previousPress?.let { previousPress ->
-            onClick()
-            scope.launch {
-              boxInteractionSource.emit(
-                PressInteraction.Release(
-                  press = previousPress
-                )
-              )
-            }
-          }
-          true
-        }
-        else -> {
-          false
-        }
-      }
-    }
-    .focusable(interactionSource = boxInteractionSource)
-    .border(
-      width = borderWidth,
-      color = animatedBorderColor
-    )
-}
-```
-[DpadFocusable.kt](app/src/main/java/dev/berggren/DpadFocusable.kt)
 
 ## Reacting to click events in the grid
 With a scrollable grid and a modifier for reacting to click events, let's put the two parts together to react to clicks on items in the grid.
