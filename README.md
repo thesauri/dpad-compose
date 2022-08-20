@@ -31,6 +31,12 @@ Similar behavior could be expected from a button that is clicked using the enter
 Out of the box, with the `.clickable()` modifier, this is no the case however.
 The click handler of the newly focused element will be called instead.
 
+### No way to specify default focusable items
+When pressing a directional key, the item in the upper corner in the layout start direction is typically focused by default.
+In many cases this might make sense, but in other cases it may be preferable to jump directly to the primary button on a screen.
+This could, for instance, be a media play button.
+Furthermore, whenever navigating to a new screen, focus will be lost and the user will have to press a d-pad key to bring it back.
+
 ### Tutorial goal
 The goal of this tutorial is to explain how the aforementioned usability issues can be addressed by implementing a custom `.dpadFocusable()` modifier.
 
@@ -590,3 +596,58 @@ Whenever we're in touch mode, we'll simply attach a `.clickable()` modifier and 
     /* D-pad modifier code */
   }
 ```
+
+### Specifying a default focusable item
+
+Next we'll add a mechanism for specifying whether an item is the default focusable item on a screen.
+This solves two problems.
+First, we can ensure that the primary item on a screen is always focused first (for instance, a media play button).
+Secondly, we can ensure that some element is focused automatically after navigating to a new screen (by default, no item is focused at all).
+
+We'll implement this by passing a `isDefault` parameter and requesting focus whenever the item is composed, as long as we are the default item and in keyboard mode.
+To do this we'll attach a focus requester:
+
+```kotlin
+fun Modifier.dpadFocusable(
+  /* [...] */
+    isDefault: Boolean = false
+) = composed {
+  val focusRequester = remember { FocusRequester() }
+
+  LaunchedEffect(inputMode.inputMode) {
+      when (inputMode.inputMode) {
+          InputMode.Keyboard -> {
+              if (isDefault) {
+                  focusRequester.requestFocus()
+              }
+          }
+          InputMode.Touch -> {}
+      }
+  }
+  /* [...] */
+
+  this
+    /* [...] */
+    .focusRequester(focusRequester)
+```
+
+Note that the focus requester has to be attached _before_ the focus target.
+
+In the main activity, we now specify the item in the upper-left corner to be default element:
+
+```kotlin
+ScrollableGrid(
+    items = boxColors
+) { color, position ->
+    /* [...] */
+    ColoredBox(
+        Modifier.dpadFocusable(
+            /* [...] */
+            isDefault = position.rowIndex == 0 && position.columnIndex == 0
+        ),
+        /* [...] */
+    )
+}
+```
+
+Now the item in the upper-left corner will be focused automatically whenever the grid appears and we previously have been navigating using the keyboard or d-pad.
