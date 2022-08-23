@@ -11,7 +11,9 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 
 class MainActivity : ComponentActivity() {
@@ -44,18 +46,28 @@ class MainActivity : ComponentActivity() {
                     Modifier
                         .fillMaxSize()
                         .background(Color(0xffecf0f1))
-                        .padding(start = 24.dp, top = 24.dp)
+                        .padding(top = boxPadding)
                 ) {
                     ColorClickedBanner(color = colorClicked)
-                    Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(boxPadding))
                     ScrollableGrid(
-                        items = boxColors,
-                    ) { color ->
+                        items = boxColors
+                    ) { color, position ->
+                        val elementPaddingAndHalfOfNextBox = with(LocalDensity.current) {
+                            (boxPadding + boxSize.div(2)).toPx()
+                        }
                         ColoredBox(
                             Modifier.dpadFocusable(
                                 onClick = {
                                     colorClicked = color
-                                }
+                                },
+                                scrollPadding = Rect(
+                                    left = elementPaddingAndHalfOfNextBox,
+                                    top = elementPaddingAndHalfOfNextBox,
+                                    right = elementPaddingAndHalfOfNextBox,
+                                    bottom = elementPaddingAndHalfOfNextBox
+                                ),
+                                isDefault = position.rowIndex == 0 && position.columnIndex == 0
                             ),
                             color = color
                         )
@@ -69,7 +81,11 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun ColorClickedBanner(color: Color) {
     Row {
-        Row(Modifier.height(IntrinsicSize.Min)) {
+        Row(
+            Modifier
+                .height(IntrinsicSize.Min)
+                .padding(start = boxPadding)
+        ) {
             Text(text = "Clicked color: ", style = MaterialTheme.typography.h3)
             Spacer(Modifier.width(24.dp))
             Box(
@@ -89,7 +105,10 @@ fun ColoredBox(
 ) {
     Box(
         modifier
-            .size(128.dp)
+            .size(boxSize)
             .background(color)
     )
 }
+
+private val boxSize = 128.dp
+private val boxPadding = 24.dp
