@@ -34,7 +34,7 @@ fun Modifier.dpadFocusable(
     unfocusedBorderColor: Color = Color(0x00f39c12),
     focusedBorderColor: Color = Color(0xfff39c12),
     indication: Indication? = null,
-    visibilityPadding: Rect = Rect.Zero,
+    scrollPadding: Rect = Rect.Zero,
     isDefault: Boolean = false
 ) = composed {
     val focusRequester = remember { FocusRequester() }
@@ -105,10 +105,10 @@ fun Modifier.dpadFocusable(
                     }
                     scope.launch {
                         val visibilityBounds = Rect(
-                            left = -1f * visibilityPadding.left,
-                            top = -1f * visibilityPadding.top,
-                            right = boxSize.width + visibilityPadding.right,
-                            bottom = boxSize.height + visibilityPadding.bottom
+                            left = -1f * scrollPadding.left,
+                            top = -1f * scrollPadding.top,
+                            right = boxSize.width + scrollPadding.right,
+                            bottom = boxSize.height + scrollPadding.bottom
                         )
                         bringIntoViewRequester.bringIntoView(visibilityBounds)
                     }

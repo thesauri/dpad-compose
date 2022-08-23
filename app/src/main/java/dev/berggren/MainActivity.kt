@@ -61,7 +61,7 @@ class MainActivity : ComponentActivity() {
                                 onClick = {
                                     colorClicked = color
                                 },
-                                visibilityPadding = Rect(
+                                scrollPadding = Rect(
                                     left = elementPaddingAndHalfOfNextBox,
                                     top = elementPaddingAndHalfOfNextBox,
                                     right = elementPaddingAndHalfOfNextBox,

@@ -219,7 +219,7 @@ fun Modifier.dpadFocusable(
     unfocusedBorderColor: Color = Color(0x00f39c12),
     focusedBorderColor: Color = Color(0xfff39c12),
     indication: Indication? = null,
-    visibilityPadding: Rect = Rect.Zero,
+    scrollPadding: Rect = Rect.Zero,
     isDefault: Boolean = false
 
 ) = composed { /* Content here */ }
@@ -518,7 +518,7 @@ Then, whenever we gain focus, we'll call the bring into view requester with the 
 ```kotlin
 fun Modifier.dpadFocusable(
   /* [...] */
-  visibilityPadding: Rect = Rect.Zero,
+  scrollPadding: Rect = Rect.Zero,
   /* [...] */
 ) = composed {
   this
@@ -527,10 +527,10 @@ fun Modifier.dpadFocusable(
             /* [...] */
             scope.launch {
                 val visibilityBounds = Rect(
-                    left = -1f * visibilityPadding.left,
-                    top = -1f * visibilityPadding.top,
-                    right = boxSize.width + visibilityPadding.right,
-                    bottom = boxSize.height + visibilityPadding.bottom
+                    left = -1f * scrollPadding.left,
+                    top = -1f * scrollPadding.top,
+                    right = boxSize.width + scrollPadding.right,
+                    bottom = boxSize.height + scrollPadding.bottom
                 )
                 bringIntoViewRequester.bringIntoView(visibilityBounds)
             }
@@ -555,7 +555,7 @@ ScrollableGrid(
     ColoredBox(
         Modifier.dpadFocusable(
             /* [...] */
-            visibilityPadding = Rect(
+            scrollPadding = Rect(
                 left = elementPaddingAndHalfOfNextBox,
                 top = elementPaddingAndHalfOfNextBox,
                 right = elementPaddingAndHalfOfNextBox,
