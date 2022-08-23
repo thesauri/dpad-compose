@@ -1,7 +1,7 @@
 # dpad-compose
 D-pad navigation in Jetpack Compose
 
-![Navigating and clicking on grid items](https://media.giphy.com/media/QxXT07irVKDZwuq18S/giphy.gif)
+![Navigating, clicking on grid items, and scrolling](https://media.giphy.com/media/Y8zhvezHBl6gr0nPxJ/giphy.gif)
 
 ## The problem
 While Android is mostly used on touch devices, the operating system can also be used with arrow keys and d-pads (directional pads).
