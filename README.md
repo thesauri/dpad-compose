@@ -42,9 +42,9 @@ The goal of this tutorial is to explain how the aforementioned usability issues 
 
 Feel free to suggest improvements by creating an issue or a pull request.
 
-## TL;DR
-- [ScrollableGrid.kt](app/src/main/java/dev/berggren/ScrollableGrid.kt)
+## TL;DR, just show me the code
 - [DpadFocusable.kt](app/src/main/java/dev/berggren/DpadFocusable.kt)
+- [ScrollableGrid.kt](app/src/main/java/dev/berggren/ScrollableGrid.kt)
 - [MainActivity.kt](app/src/main/java/dev/berggren/MainActivity.kt)
 
 ## Tutorial
@@ -605,7 +605,7 @@ This solves two problems.
 First, we can ensure that the primary item on a screen is always focused first (for instance, a media play button).
 Secondly, we can ensure that some element is focused automatically after navigating to a new screen (by default, no item is focused at all).
 
-We'll implement this by passing a `isDefault` parameter and requesting focus whenever the item is composed, as long as we are the default item and in keyboard mode.
+We implement this by passing a `isDefault` parameter and requesting focus whenever the item is composed, as long as we are the default item and in keyboard mode.
 To do this we'll attach a focus requester:
 
 ```kotlin
@@ -630,6 +630,7 @@ fun Modifier.dpadFocusable(
   this
     /* [...] */
     .focusRequester(focusRequester)
+    /* [...] */
 ```
 
 Note that the focus requester has to be attached _before_ the focus target.
@@ -652,3 +653,180 @@ ScrollableGrid(
 ```
 
 Now the item in the upper-left corner will be focused automatically whenever the grid appears and we previously have been navigating using the keyboard or d-pad.
+
+## Summary
+With all these changes in place we now have a custom d-pad modifier that solves some of the usability problems with using `.clickable` directly.
+More specifically, there is now support for scroll padding and helping the user find subsequent items even at the edge of the viewport.
+The user can also cancel clicks similar to how its done in a touch environment by moving focus away from the pressed item before the center or enter key is released.
+Finally, default focus items can also be specified to direct users to the primary action button on a given screen.
+
+[DpadFocusable.kt](app/src/main/java/dev/berggren/DpadFocusable.kt)
+```kotlin
+package dev.berggren
+
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.*
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.runtime.*
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusTarget
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.InputMode
+import androidx.compose.ui.input.key.*
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalInputModeManager
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+
+@OptIn(ExperimentalFoundationApi::class)
+@ExperimentalComposeUiApi
+fun Modifier.dpadFocusable(
+    onClick: () -> Unit,
+    borderWidth: Dp = 4.dp,
+    unfocusedBorderColor: Color = Color(0x00f39c12),
+    focusedBorderColor: Color = Color(0xfff39c12),
+    indication: Indication? = null,
+    scrollPadding: Rect = Rect.Zero,
+    isDefault: Boolean = false
+) = composed {
+    val focusRequester = remember { FocusRequester() }
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
+    val boxInteractionSource = remember { MutableInteractionSource() }
+    val isItemFocused by boxInteractionSource.collectIsFocusedAsState()
+    val animatedBorderColor by animateColorAsState(
+        targetValue =
+        if (isItemFocused) focusedBorderColor
+        else unfocusedBorderColor
+    )
+    var previousFocus: FocusInteraction.Focus? by remember {
+        mutableStateOf(null)
+    }
+    var previousPress: PressInteraction.Press? by remember {
+        mutableStateOf(null)
+    }
+    val scope = rememberCoroutineScope()
+    var boxSize by remember {
+        mutableStateOf(IntSize(0, 0))
+    }
+    val inputMode = LocalInputModeManager.current
+
+    LaunchedEffect(inputMode.inputMode) {
+        when (inputMode.inputMode) {
+            InputMode.Keyboard -> {
+                if (isDefault) {
+                    focusRequester.requestFocus()
+                }
+            }
+            InputMode.Touch -> {}
+        }
+    }
+    LaunchedEffect(isItemFocused) {
+        previousPress?.let {
+            if (!isItemFocused) {
+                boxInteractionSource.emit(
+                    PressInteraction.Release(
+                        press = it
+                    )
+                )
+            }
+        }
+    }
+
+    if (inputMode.inputMode == InputMode.Touch)
+        this.clickable(
+            interactionSource = boxInteractionSource,
+            indication = indication ?: rememberRipple()
+        ) {
+            onClick()
+        }
+    else
+        this
+            .bringIntoViewRequester(bringIntoViewRequester)
+            .onSizeChanged {
+                boxSize = it
+            }
+            .indication(
+                interactionSource = boxInteractionSource,
+                indication = indication ?: rememberRipple()
+            )
+            .onFocusChanged { focusState ->
+                if (focusState.isFocused) {
+                    val newFocusInteraction = FocusInteraction.Focus()
+                    scope.launch {
+                        boxInteractionSource.emit(newFocusInteraction)
+                    }
+                    scope.launch {
+                        val visibilityBounds = Rect(
+                            left = -1f * scrollPadding.left,
+                            top = -1f * scrollPadding.top,
+                            right = boxSize.width + scrollPadding.right,
+                            bottom = boxSize.height + scrollPadding.bottom
+                        )
+                        bringIntoViewRequester.bringIntoView(visibilityBounds)
+                    }
+                    previousFocus = newFocusInteraction
+                } else {
+                    previousFocus?.let {
+                        scope.launch {
+                            boxInteractionSource.emit(FocusInteraction.Unfocus(it))
+                        }
+                    }
+                }
+            }
+            .onKeyEvent {
+                if (!listOf(Key.DirectionCenter, Key.Enter).contains(it.key)) {
+                    return@onKeyEvent false
+                }
+                when (it.type) {
+                    KeyEventType.KeyDown -> {
+                        val press =
+                            PressInteraction.Press(
+                                pressPosition = Offset(
+                                    x = boxSize.width / 2f,
+                                    y = boxSize.height / 2f
+                                )
+                            )
+                        scope.launch {
+                            boxInteractionSource.emit(press)
+                        }
+                        previousPress = press
+                        true
+                    }
+                    KeyEventType.KeyUp -> {
+                        previousPress?.let { previousPress ->
+                            onClick()
+                            scope.launch {
+                                boxInteractionSource.emit(
+                                    PressInteraction.Release(
+                                        press = previousPress
+                                    )
+                                )
+                            }
+                        }
+                        true
+                    }
+                    else -> {
+                        false
+                    }
+                }
+            }
+            .focusRequester(focusRequester)
+            .focusTarget()
+            .border(
+                width = borderWidth,
+                color = animatedBorderColor
+            )
+}
+```
