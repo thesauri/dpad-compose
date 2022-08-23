@@ -145,7 +145,7 @@ val rowColors = listOf(
 )
 ```
 
-These are the primary colors for each row, but to further distinguish them horizontally let's darkened them progressively:
+These are the primary colors for each row, but to further distinguish them horizontally let's darken them progressively:
 
 ```kotlin
 val itemsPerRow = 10
@@ -161,7 +161,7 @@ val boxColors = rowColors.map { rowColor ->
 }
 ```
 
-Next, let's add component that represent a grid item.
+Next, let's add a component that is a grid item.
 In this case the item is a rectangular box with the given color as background:
 
 ```kotlin
@@ -204,7 +204,7 @@ At this stage, you should have a Netflix-like grid that is row-wise scrollable a
 ### Focus and click handling
 The next step is to make the grid items focusable using the d-pad and to invoke click actions when clicking the center key or enter.
 Similar to how adding out-of-the-box click and focus handling is done using the `clickable()` modifier, we'll create a custom modifier `dpadFocusable()` that we can attach to grid items.
-This modifier has the responsibility of showing a border if focused and appropriately responding to key events.
+This modifier has the responsibility of showing a border if focused and responding to key events appropriately.
 
 ![Dpad navigation](https://media.giphy.com/media/hzCzKy4ccr5zeg06P2/giphy.gif)
 
@@ -246,7 +246,7 @@ In this case, we use a border that smoothly transitions between the focused colo
 }
 ```
 
-In addition to visualization whether an element is focused, we also want to visualize whether it is clicked or not.
+In addition to visualizing whether an element is focused, we also want to visualize whether it is clicked or not.
 This can be done by using the `.indication()` modifier.
 In case the user did not specify a particular indication, we fall back to the default ripple indication:
 
@@ -262,10 +262,11 @@ In case the user did not specify a particular indication, we fall back to the de
 }
 ```
 
-In the last steps, we used an interaction source (`boxInteractionSource`) to listen to whether the item is focused or not.
+In the last steps, we used an interaction source (`boxInteractionSource`) to determine whether the item is focused or not.
 To receive use events, we need to emit them whenever the box gains or releases focus.
 Normally, `boxInteractionSource` could simply have been passed to the clickable modifier and it would have emitted the events for us.
-As we want to override the default behavior, however, we have to emit these events ourselves. 
+As we want to override the default behavior, however, we need to emit these events ourselves.
+
 When we gain focus, we emit a focus event and store it as a state variable.
 When focus is lost, we emit an unfocus event that refers to the last focus event:
 
@@ -299,7 +300,7 @@ Now the items will have a border whenever they are focused.
 Next, we'll add clicking.
 
 There are two main goals when handling key events: invoke the on-click handler whenever the center key is pressed and visualizing press and release events.
-For good user experience, we need to make it possible to cancel click events too.
+But for good user experience we need to make it possible to cancel click events too.
 This is done by pressing and holding the center key (or enter) and then navigating to another item before releasing the center key (similar to how a tap can be canceled by dragging the finger away from the touched element before releasing).
 
 We add a `.keyEvent()` modifier with a block that is run for key events, but we ignore any other key than the center or enter key by returning early:
@@ -349,13 +350,13 @@ This is done by emitting a [PressInteraction.Press](https://developer.android.co
 }
 ```
 
-In the snippet above, there are two variables that we haven't declared yet: `boxSize` and `previousPress`.
+In the snippet above, two state variables are used that haven't declared yet: `boxSize` and `previousPress`.
 
 The default indication, ripple indications, grows from the point where the user pressed the item.
 For this reason we need to specify a position for the interaction, even though a d-pad click has no inherent position.
 One option that I found to look good is to have the ripple grow from the center of the item.
 To achieve this we need to know the width and height of the element in question.
-This can be done by adding a [onSizeChanged](https://developer.android.com/reference/kotlin/androidx/compose/ui/layout/OnSizeChangedModifier) modifier that is called whenever the element's global position changes.
+This can be done by adding a [onSizeChanged](https://developer.android.com/reference/kotlin/androidx/compose/ui/layout/package-summary#(androidx.compose.ui.Modifier).onSizeChanged(kotlin.Function1)) modifier that is called whenever the element's size changes.
 We keep track of the size and update it whenever the modifier's block is called:
 
 ```kotlin
@@ -513,7 +514,7 @@ First, we will create a `BringIntoViewRequester()` and attach it to the item:
     /* [...] */
 ```
 
-Then, whenever we gain focus, we'll call the bring into view requester with the user-passed padding added:
+Then, whenever we gain focus, we call the bring into view requester with the user-passed padding added to the item's inherent size:
 
 ```kotlin
 fun Modifier.dpadFocusable(
@@ -541,8 +542,8 @@ fun Modifier.dpadFocusable(
     }
 ```
 
-Finally, we'll pass a visibility padding that corresponds to the spacing between the boxes and half of a box width.
-Before passing this value, we also need to convert it from density pixels to on-screen pixels:
+Finally, we pass a visibility padding that corresponds to the spacing between the boxes and half of a box width.
+Before passing this value, we need to convert it from density pixels to on-screen pixels:
 
 ```kotlin
 /* [...] */
@@ -570,7 +571,7 @@ ScrollableGrid(
 
 Now when scrolling towards the edge of the viewport, half of the next element is exposed.
 
-TODO: Add a video of this.
+![Navigating towards the edge of the screen with scroll padding](https://media.giphy.com/media/HNzstQp3Bbm5TyqsJU/giphy.gif)
 
 ### Supporting touch
 As we aren't using the `.clickable()` modifier, we have lost support for tapping the element using touch.
